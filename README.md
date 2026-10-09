@@ -18,7 +18,7 @@ It features dynamic light/dark theme switching and automatic detection for both 
 Recommended way to install this plugin is via [Yazi's package manager](https://yazi-rs.github.io/docs/cli#pm),
 
 ```bash
-ya pkg add CColombus/bat.yazi
+ya pkg add CColombus/bat
 ```
 
 Or you can clone this repository directly into your Yazi plugins directory,
@@ -76,10 +76,10 @@ You can optionally customize how `bat` renders your files by configuring the plu
 
 ```lua
 require("bat"):setup({
-    theme_dark  = "Catppuccin Macchiato", -- Theme applied when Yazi detects a dark terminal
-    theme_light = "GitHub",               -- Theme applied when Yazi detects a light terminal
-    style       = "numbers,changes",      -- Passed to bat's --style flag (defaults to "plain")
-    wrap        = "character",            -- Passed to bat's --wrap flag (defaults to "never")
+    theme_dark  = "Dracula",        -- Theme applied when Yazi detects a dark terminal
+    theme_light = "OneHalfLight",   -- Theme applied when Yazi detects a light terminal
+    style       = "numbers,grid",   -- Passed to bat's --style flag (defaults to "plain")
+    wrap        = "never",          -- Passed to bat's --wrap flag (defaults to "never")
 })
 
 ```
