@@ -2,14 +2,21 @@ local M = {}
 
 function M:setup(opts)
     opts = opts or {}
-    self.theme = opts.theme
+    self.theme = opts.theme or nil
+    self.theme_dark = opts.theme_dark or opts.theme or nil
+    self.theme_light = opts.theme_light or opts.theme or nil
     self.style = opts.style or "plain"
     self.wrap = opts.wrap or "never"
 end
 
 local get_opts = ya.sync(function(state)
-    return state.theme, state.style or "plain", state.wrap or "never"
+    return state.theme_dark, state.theme_light, state.style or "plain", state.wrap or "never"
 end)
+
+local function theme()
+    local light = rt.term.light()
+    return light == true and "light" or light == false and "dark" or "auto"
+end
 
 local function theme_hash(s)
     local h = 0
@@ -19,7 +26,7 @@ local function theme_hash(s)
     return h
 end
 
--- Detect available command (prioritizing 'bat' over 'batcat') and memoize version
+-- Detect available bat/batcat command and memoize version
 local bat_bin, bat_version
 local function get_bat_cmd()
     if bat_bin ~= nil then
@@ -49,15 +56,19 @@ local function get_bat_cmd()
 end
 
 -- Key the command name, version, theme, style, and wrap settings
-local function cache_key(job, theme, style, wrap)
+local function cache_key(job, active_theme, style, wrap)
     local bin, ver = get_bat_cmd()
-    local id = bin .. "\0" .. ver .. "\0" .. (theme or "") .. "\0" .. style .. "\0" .. wrap
+    local id = bin .. "\0" .. ver .. "\0" .. (active_theme or "") .. "\0" .. style .. "\0" .. wrap
     return job.area.w * 16777216 + theme_hash(id)
 end
 
 function M:peek(job)
-    local theme, style, wrap = get_opts()
-    local cache = ya.file_cache({ file = job.file, skip = cache_key(job, theme, style, wrap) })
+    local theme_dark, theme_light, style, wrap = get_opts()
+    
+    local t_mode = theme()
+    local active_theme = (t_mode == "light") and theme_light or theme_dark
+
+    local cache = ya.file_cache({ file = job.file, skip = cache_key(job, active_theme, style, wrap) })
     if cache and self:preload(job) == 1 then
         local f = io.open(tostring(cache), "r")
         if f then
@@ -95,8 +106,12 @@ function M:seek(job)
 end
 
 function M:preload(job)
-    local theme, style, wrap = get_opts()
-    local cache = ya.file_cache({ file = job.file, skip = cache_key(job, theme, style, wrap) })
+    local theme_dark, theme_light, style, wrap = get_opts()
+    
+    local t_mode = theme()
+    local active_theme = (t_mode == "light") and theme_light or theme_dark
+
+    local cache = ya.file_cache({ file = job.file, skip = cache_key(job, active_theme, style, wrap) })
     if not cache then
         return 1
     end
@@ -114,8 +129,8 @@ function M:preload(job)
         :arg("--terminal-width")
         :arg(tostring(job.area.w))
 
-    if theme then
-        cmd:arg("--theme"):arg(tostring(theme))
+    if active_theme then
+        cmd:arg("--theme"):arg(tostring(active_theme))
     end
 
     local output, err = cmd
@@ -128,7 +143,7 @@ function M:preload(job)
         local detail = err and (" (" .. tostring(err) .. ")") or ""
         ya.preview_widget(
             job,
-            ui.Text("Neither 'bat' nor 'batcat' found on PATH" .. detail):area(job.area)
+            ui.Text("'bat' or 'batcat' command not found on PATH" .. detail):area(job.area)
         )
         return 2
     end
