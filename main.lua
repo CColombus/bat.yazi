@@ -134,7 +134,7 @@ function M:preload(job)
     end
 
     local output, err = cmd
-        :arg(tostring(job.file.url))
+        :arg(tostring(job.file.path))
         :stdout(Command.PIPED)
         :stderr(Command.PIPED)
         :output()
